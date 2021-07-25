@@ -1,4 +1,5 @@
-/* globals slimyBackgroundClasslist, slimyConfig, slimyFeed, engine, refreshFriends, renderFriends, friendList, loadFriends */ // eslint-disable-line no-unused-vars
+/* globals slimyBackgroundClasslist, slimyConfig, slimyFeed, engine, refreshFriends, renderFriends, friendList, loadFriends, loadInstanceDetail */ // eslint-disable-line no-unused-vars
+
 /*
 const currFeed = [];
 
@@ -24,7 +25,7 @@ function displayHudAsFeed (_head, _title, _message, _important) {
 }
 */
 
-// Slimy Settings Factory Functions
+// #region Slimy Settings Factory Functions
 
 function SlimyInpSlider (_obj) {
   this.obj = _obj;
@@ -349,6 +350,10 @@ function createNewColorSettings (name = slimySettings.length) {
   slimySettings.push(newSettings);
 }
 
+// #endregion
+
+// #region Background Colors and Image
+
 function updateStuff () {
   const change = [];
   for (let i = 0; i < slimySettings.length; i++) {
@@ -371,8 +376,6 @@ function updateStuff () {
 
   updateCSS();
 }
-
-// Background Colors and Image
 
 function changeBackgroundImage (background) {
   let image = false;
@@ -654,7 +657,9 @@ for (let i = 0; i < slimyBackgroundClasslist.length; i++) {
 
 updateStuff();
 
-// Version
+// #endregion
+
+// #region Version
 
 function checkVersion (uiVersion, chilloutVersion) {
   const xhr = new XMLHttpRequest(); // eslint-disable-line no-undef
@@ -686,8 +691,8 @@ function checkVersion (uiVersion, chilloutVersion) {
   xhr.send();
 }
 
-const slimyCVRVersion = '2021r159p1 RELEASE';
-const slimyUIVersion = '1.0.8.5';
+const slimyCVRVersion = '2021r160 EV1';
+const slimyUIVersion = '1.0.8.6';
 
 const slimyChilloutVersion = document.querySelector('.slimy-ui-chillout-version');
 if (slimyChilloutVersion) slimyChilloutVersion.innerHTML = slimyCVRVersion;
@@ -708,12 +713,13 @@ engine.on('UpdateGameDebugInformation', function (_info) {
   slimyVersionValidated = true;
 });
 
-// Friends
+// #endregion
+
+// #region Friends Refresh
 
 let slimyFriendsTimeout = null;
 
 function slimyFriendsRefresh () {
-  refreshFriends();
   const friendsButton = document.querySelector('#friends .list-filter .content-btn.second');
 
   friendsButton.removeEventListener('click', slimyFriendsRefresh);
@@ -725,6 +731,8 @@ function slimyFriendsRefresh () {
     friendsButton.removeAttribute('disabled');
     friendsButton.addEventListener('click', slimyFriendsRefresh);
   }, 5000);
+
+  refreshFriends();
 }
 
 engine.on('LoadFriends', function () {
@@ -734,80 +742,40 @@ engine.on('LoadFriends', function () {
 
   friendsButton.addEventListener('click', slimyFriendsRefresh);
 
+  const buttons = document.querySelectorAll('#friends .filter-option');
+
+  for (let i = 0; buttons[i]; i++) {
+    buttons[i].classList.remove('active');
+  }
+
   if (slimyFriendsTimeout !== null) clearTimeout(slimyFriendsTimeout);
   slimyFriendsTimeout = null;
 });
 
 document.querySelector('#friends .list-filter .content-btn.second').addEventListener('click', slimyFriendsRefresh);
 
-loadFriends = function (_list, _filter) { // eslint-disable-line no-global-assign
+loadFriends = function (_list) { // eslint-disable-line no-global-assign
   friendList = _list; // eslint-disable-line no-global-assign
   friendList.sort(function (a, b) {
-    const firstParameter = a.OnlineState === b.OnlineState ? 0 : a.OnlineState ? -1 : 1;
+    const firstParameter = a.UserIsOnline === b.UserIsOnline ? 0 : a.UserIsOnline ? -1 : 1;
 
     if (firstParameter === 0) {
-      return a.PlayerName.toLowerCase().localeCompare(b.PlayerName.toLowerCase());
+      return a.UserName.toLowerCase().localeCompare(b.UserName.toLowerCase());
     } else {
       return firstParameter;
     }
   });
 
-  let html = '';
-
-  for (let i = 0; _filter[i]; i++) {
-    html += '<div class="filter-option data-filter-' + _filter[i].CategoryKey +
-            '" onclick="filterContent(\'friends\', \'' +
-            _filter[i].CategoryKey + '\');">' + _filter[i].CategoryClearTextName + '</div>';
+  for (let i = 0; i < friendList.length; i++) {
+    friendList[i].FilterTags += ',' + (friendList[i].UserIsOnline ? 'frndonline' : 'frndoffline');
   }
-
-  document.querySelector('#friends .filter-content').innerHTML = html;
 
   renderFriends(_list);
 };
 
-/* NOTE This doesn't work anymore
-engine.on('LoadFriends', function (_list, _filter) {
-  if (!_list || _list.length === 0) {
-    return;
-  }
+// #endregion
 
-  const onlineFriends = [];
-  for (let i = 0; i < _list.length; i++) {
-    if (_list[i].OnlineState) {
-      onlineFriends.push(_list[i]);
-    }
-  }
-  renderOnlineFriends(onlineFriends);
-});
-
-function renderOnlineFriends (onlineFriends) {
-  const contentList = document.querySelector('.content-friends .list-content');
-
-  let html = '';
-
-  for (let i = 0; onlineFriends[i]; i++) {
-    if (i % 3 === 0) {
-      if (i !== 0) {
-        html += '</div>';
-      }
-      html += '<div class="content-row">';
-    }
-
-    html += '<div class="content-cell online-friend"><div class="content-cell-formatter"></div>' +
-            '<div class="content-cell-content"><div class="online-state online"></div>' +
-            '<img class="content-image" src="' +
-            onlineFriends[i].ProfileImageUrl + '"><div class="content-name">' +
-            onlineFriends[i].PlayerName + '</div><div class="content-btn second" ' +
-            'onclick="getUserDetails(\'' + onlineFriends[i].Guid + '\');">Details</div>' +
-            '</div></div>';
-  }
-
-  contentList.innerHTML = html;
-}
-
-refreshFriends();
-*/
-// Feed
+// #region Feed
 /*
 function updateFeed () {
   const newsDiv = document.querySelector('.content-feed .feed-news');
@@ -825,6 +793,7 @@ function updateFeed () {
 
 updateFeed();
 */
+// #endregion
 
 // #region Secret
 
@@ -865,6 +834,7 @@ validateSecret(slimyConfig.slimySecret);
 // #endregion
 
 // #region Active world filter fix
+/* FIXME
 loadWorlds = (_list, _filter) => { // eslint-disable-line no-undef
   worldList = _list; // eslint-disable-line no-undef
 
@@ -883,6 +853,7 @@ loadWorlds = (_list, _filter) => { // eslint-disable-line no-undef
 
   worldsResetLoad = false; // eslint-disable-line no-undef
 };
+*/
 
 refreshWorlds = () => { // eslint-disable-line no-undef
   worldsResetLoad = true; // eslint-disable-line no-undef
@@ -930,6 +901,9 @@ sendFuncKey = (_e) => { // eslint-disable-line no-undef
       break;
     case 'BACK':
       closeKeyboard(); // eslint-disable-line no-undef
+      break;
+    case 'PASTE':
+      keyboardPasteFromClipboard(); // eslint-disable-line no-undef
       break;
   }
 };
@@ -1067,30 +1041,29 @@ function syncParametersInit (info) {
 
 // #region Joining instances
 
-loadInstanceDetail = (_owner, _world, _instance, _instanceUsers) => { // eslint-disable-line no-undef
+loadInstanceDetail = (_instance) => { // eslint-disable-line no-global-assign
   const detailPage = document.getElementById('instance-detail');
   closeAvatarSettings(); // eslint-disable-line no-undef
 
   document.querySelector('#instance-detail h1').innerHTML = 'Instance: ' + _instance.InstanceName;
 
-  document.querySelector('#instance-detail .profile-image').src = _owner.PlayerImageUrl;
-  document.querySelector('#instance-detail .content-instance-owner h2').innerHTML = _owner.PlayerName;
-  document.querySelector('#instance-detail .content-instance-owner h3').innerHTML = _owner.PlayerRank;
+  document.querySelector('#instance-detail .profile-image').src = _instance.Owner.UserImageUrl;
+  document.querySelector('#instance-detail .content-instance-owner h2').innerHTML = _instance.Owner.UserName;
+  document.querySelector('#instance-detail .content-instance-owner h3').innerHTML = _instance.Owner.UserRank;
 
-  document.querySelector('#instance-detail .profile-badge img').src = _owner.FeaturedBadgeImageUrl;
-  document.querySelector('#instance-detail .profile-badge p').innerHTML = _owner.FeaturedBadgeName;
+  document.querySelector('#instance-detail .profile-badge img').src = _instance.Owner.FeaturedBadgeImageUrl;
+  document.querySelector('#instance-detail .profile-badge p').innerHTML = _instance.Owner.FeaturedBadgeName;
 
-  document.querySelector('#instance-detail .profile-group img').src = _owner.FeaturedGroupImageUrl;
-  document.querySelector('#instance-detail .profile-group p').innerHTML = _owner.FeaturedGroupName;
+  document.querySelector('#instance-detail .profile-group img').src = _instance.Owner.FeaturedGroupImageUrl;
+  document.querySelector('#instance-detail .profile-group p').innerHTML = _instance.Owner.FeaturedGroupName;
 
-  document.querySelector('#instance-detail .profile-avatar img').src = _owner.CurrentAvatarImageUrl;
-  document.querySelector('#instance-detail .profile-avatar p').innerHTML = _owner.CurrentAvatarName;
+  document.querySelector('#instance-detail .profile-avatar img').src = _instance.Owner.CurrentAvatarImageUrl;
+  document.querySelector('#instance-detail .profile-avatar p').innerHTML = _instance.Owner.CurrentAvatarName;
 
-  document.querySelector('#instance-detail .world-image').src = _world.WorldImageUrl;
-  document.querySelector('#instance-detail .content-instance-world h2').innerHTML = _world.WorldName;
-  document.querySelector('#instance-detail .content-instance-world p').innerHTML = 'by ' + _world.AuthorName;
-  document.querySelector('#instance-detail .content-instance-world p')
-    .setAttribute('onclick', 'getUserDetails(\'' + _world.AuthorGuid + '\');');
+  document.querySelector('#instance-detail .world-image').src = _instance.World.WorldImageUrl;
+  document.querySelector('#instance-detail .content-instance-world h2').innerHTML = _instance.World.WorldName;
+  document.querySelector('#instance-detail .content-instance-world p').innerHTML = 'by ' + _instance.World.AuthorName;
+  document.querySelector('#instance-detail .content-instance-world p').setAttribute('onclick', 'getUserDetails(\'' + _instance.World.AuthorId + '\');');
 
   document.querySelector('#instance-detail .data-type').innerHTML = _instance.Privacy;
   document.querySelector('#instance-detail .data-region').innerHTML = _instance.Region;
@@ -1098,19 +1071,19 @@ loadInstanceDetail = (_owner, _world, _instance, _instanceUsers) => { // eslint-
   document.querySelector('#instance-detail .data-maxplayers').innerHTML = _instance.MaxPlayer;
   document.querySelector('#instance-detail .data-currplayers').innerHTML = _instance.CurrentPlayer;
 
-  getJoinId(_instance.InstanceId);
+  getJoinId(_instance.InstanceId, _instance.World.WorldId);
 
   document.querySelector('#instance-detail .instance-btn.joinBtn')
-    .setAttribute('onclick', 'joinInstance(\'' + _instance.InstanceId + '\');');
+    .setAttribute('onclick', 'joinInstance(\'' + _instance.InstanceId + '\', \'' + _instance.World.WorldId + '\');');
   document.querySelector('#instance-detail .instance-btn.portalBtn')
     .setAttribute('onclick', 'dropInstancePortal(\'' + _instance.InstanceId + '\');');
 
   let html = '';
 
-  for (let i = 0; i < _instanceUsers.length; i++) {
-    html += '<div class="instancePlayer" onclick="getUserDetails(\'' + _instanceUsers[i].UserId + '\');"><img class="instancePlayerImage" src="' +
-      _instanceUsers[i].UserImageUrl + '"><div class="instancePlayerName">' +
-      _instanceUsers[i].UserName + '</div></div>';
+  for (let i = 0; i < _instance.Users.length; i++) {
+    html += '<div class="instancePlayer" onclick="getUserDetails(\'' + _instance.Users[i].UserId + '\');"><img class="instancePlayerImage" src="' +
+      _instance.Users[i].UserImageUrl + '"><div class="instancePlayerName">' +
+      _instance.Users[i].UserName + '</div></div>';
   }
 
   document.querySelector('#instance-detail .content-instance-players .scroll-content').innerHTML = html;
@@ -1119,9 +1092,9 @@ loadInstanceDetail = (_owner, _world, _instance, _instanceUsers) => { // eslint-
   detailPage.classList.add('in');
 };
 
-function getJoinId (instanceId) {
+function getJoinId (instanceId, worldId) {
   const xhr = new XMLHttpRequest(); // eslint-disable-line no-undef
-  xhr.open('GET', 'https://slimesenpai.fr/chilloutui/joinId/new?instanceId=' + instanceId + '&worldId=' + 'notNeeded', true);
+  xhr.open('GET', 'https://slimesenpai.fr/chilloutui/joinId/new?instanceId=' + instanceId + '&worldId=' + worldId, true);
   xhr.onreadystatechange = function () {
     if (xhr.readyState === 4 && xhr.status === 200) {
       const response = JSON.parse(xhr.responseText);
@@ -1144,10 +1117,10 @@ function getJoinParameters (joinId) {
     if (xhr.readyState === 4 && xhr.status === 200) {
       const response = JSON.parse(xhr.responseText);
       if (response) {
-        if (response.instanceId) {
+        if (response.worldId && response.instanceId) {
           document.getElementById('joinIdSearch').innerHTML = 'joining...';
           document.getElementById('joinIdSearch').setAttribute('data-value', '');
-          joinInstance(response.instanceId); // eslint-disable-line no-undef
+          joinInstance(response.instanceId, response.worldId); // eslint-disable-line no-undef
         } else {
           document.getElementById('joinIdSearch').innerHTML = 'error no ids in response...';
           document.getElementById('joinIdSearch').setAttribute('data-value', '');
