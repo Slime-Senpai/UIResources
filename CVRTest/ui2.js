@@ -1155,12 +1155,12 @@ let slimyCurrentInstance;
 
 changeWorld = (_uid) => { // eslint-disable-line no-undef
   engine.call('CVRAppCallChangeWorld', _uid);
-  if (slimyCurrentInstance) joinInstance(slimyCurrentInstance); // eslint-disable-line no-undef
+  if (slimyCurrentInstance) joinInstance(slimyCurrentInstance.uid, slimyCurrentInstance.world); // eslint-disable-line no-undef
 };
 
-joinInstance = (_uid) => { // eslint-disable-line no-undef
-  engine.call('CVRAppCallJoinInstance', _uid);
-  slimyCurrentInstance = _uid;
+joinInstance = (_uid, _world) => { // eslint-disable-line no-undef
+  engine.call('CVRAppCallJoinInstance', _uid, _world);
+  slimyCurrentInstance = { uid: _uid, world: _world };
 };
 
 // #endregion
