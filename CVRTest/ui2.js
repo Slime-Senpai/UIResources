@@ -983,7 +983,7 @@ function syncParametersInit (info) {
 
     const syncText = document.createElement('div');
     syncText.classList.add('option-caption');
-    syncText.innerHTML = 'Synced';
+    syncText.innerHTML = 'Sync ' + parameter.name + '?';
 
     // <div id="SlimyBackgroundImageToggle" class="slimy_toggle" data-current="false"></div>
 
